@@ -22,7 +22,7 @@
   },
   "pluginInfo": {
     "defaultConfig": {
-      "port": "7513"
+      "port": 7513
     }
   },
   "license": "Apache-2.0",
