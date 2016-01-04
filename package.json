@@ -22,7 +22,9 @@
   },
   "pluginInfo": {
     "defaultConfig": {
-      "port": 7513
+      "port": 7513,
+      "loadedBy": "server",
+      "protocol": "socketio"
     }
   },
   "license": "Apache-2.0",
