@@ -1,6 +1,6 @@
 {
   "name": "kuzzle-plugin-socketio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Protocol plugin adding Socket.io support to Kuzzle",
   "main": "./lib/index.js",
   "repository": {
@@ -23,8 +23,7 @@
   "pluginInfo": {
     "defaultConfig": {
       "port": 7513,
-      "loadedBy": "server",
-      "protocol": "socketio"
+      "loadedBy": "server"
     }
   },
   "license": "Apache-2.0",
