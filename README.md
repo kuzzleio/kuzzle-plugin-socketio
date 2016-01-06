@@ -14,9 +14,10 @@ This plugin doesn't need any right.
 
 You can override the configuration in your `config/customPlugins.json` file in Kuzzle:
 
-| Name | Default value | Available | Description                 |
+| Name | Default value | Type | Description                 |
 |------|---------------|-----------|-----------------------------|
-| ``port`` | ``7513`` | number > 1024 | Network port to open |
+| ``port`` | ``7512`` | Integer > 1024 | Network port to open |
+| ``room`` | ``"Kuzzle"`` | String | Name of the room listened by the plugin |
 
 # How to create a plugin
 
