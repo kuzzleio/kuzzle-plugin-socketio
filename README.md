@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/kuzzleio/kuzzle-plugin-socketio.svg?branch=master)](https://travis-ci.org/kuzzleio/kuzzle-plugin-socketio)
+
 ![logo](https://raw.githubusercontent.com/kuzzleio/kuzzle/master/docs/images/logo.png)
 
 # Protocol plugin: socket.io
@@ -14,7 +16,7 @@ You can override the configuration in your `config/customPlugins.json` file in K
 
 | Name | Default value | Available | Description                 |
 |------|---------------|-----------|-----------------------------|
-| ``port`` | ``7513`` | number > 1024 | Network port to open | 
+| ``port`` | ``7513`` | number > 1024 | Network port to open |
 
 # How to create a plugin
 
