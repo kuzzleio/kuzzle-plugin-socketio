@@ -8,7 +8,7 @@
     "url": "git+https://github.com/kuzzleio/kuzzle-plugin-socketio.git"
   },
   "scripts": {
-    "test": "grunt && istanbul cover _mocha"
+    "test": "istanbul cover _mocha"
   },
   "keywords": [
     "kuzzle",
