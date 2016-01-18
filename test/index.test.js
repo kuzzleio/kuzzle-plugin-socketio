@@ -232,7 +232,7 @@ describe('plugin implementation', function () {
               connected = true;
               return Promise.resolve(connection);
             },
-            execute: (token, request, conn) => {
+            execute: (request, conn) => {
               should(conn).be.eql(connection);
               executed = true;
 
@@ -281,7 +281,7 @@ describe('plugin implementation', function () {
           should(messageSent).be.eql(serializedResponse);
           should(destination).be.eql(fakeRequestId);
           done();
-        }, 20);
+        }, 40);
       }, 20);
     });
 
