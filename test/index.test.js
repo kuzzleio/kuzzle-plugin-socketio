@@ -13,7 +13,8 @@ describe('plugin implementation', function () {
     fakeId = 'Verbal Kint',
     destination,
     linkedChannel,
-    messageSent;
+    messageSent,
+    notification;
 
   before(function () {
     // stubbing socket.io
@@ -37,7 +38,8 @@ describe('plugin implementation', function () {
         emitter.sockets = { connected: {} };
         emitter.sockets.connected[fakeId] = {
           join: channel => linkedChannel = channel,
-          leave: channel => linkedChannel = channel
+          leave: channel => linkedChannel = channel,
+          emit: (event, payload) => notification = {event, payload}
         };
 
         return emitter;
@@ -50,6 +52,7 @@ describe('plugin implementation', function () {
     destination = null;
     messageSent = null;
     linkedChannel = null;
+    notification = null;
     plugin = new Plugin();
   });
 
@@ -154,6 +157,29 @@ describe('plugin implementation', function () {
       plugin.broadcast({channel,payload});
       should(messageSent).be.eql(payload);
       should(destination).be.eql(channel);
+    });
+  });
+
+  describe('#notify', function () {
+    var
+      channel = 'foobar',
+      payload = {foo: 'bar'};
+
+    beforeEach(function () {
+      plugin.init({port: 1234}, {}, false);
+    });
+
+    it('should do nothing if in dummy mode', function () {
+      plugin.isDummy = true;
+      plugin.notify({id: fakeId,channel,payload});
+      should(notification).be.null();
+    });
+
+    it('should notify a client correctly', function () {
+      plugin.notify({id: fakeId, channel, payload});
+      should(notification).not.be.null();
+      should(notification.payload).be.eql(payload);
+      should(notification.event).be.eql(channel);
     });
   });
 
