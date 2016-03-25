@@ -1,6 +1,6 @@
 {
   "name": "kuzzle-plugin-socketio",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Protocol plugin adding Socket.io support to Kuzzle",
   "main": "./lib/index.js",
   "repository": {
