@@ -37,9 +37,9 @@ describe('plugin implementation', function () {
 
         emitter.sockets = { connected: {} };
         emitter.sockets.connected[fakeId] = {
-          join: channel => linkedChannel = channel,
-          leave: channel => linkedChannel = channel,
-          emit: (event, payload) => notification = {event, payload}
+          join: channel => { linkedChannel = channel; },
+          leave: channel => { linkedChannel = channel; },
+          emit: (event, payload) => { notification = {event, payload}; }
         };
 
         return emitter;
@@ -258,15 +258,15 @@ describe('plugin implementation', function () {
               connected = true;
               return Promise.resolve(connection);
             },
-            execute: (request, conn) => {
+            execute: (request, conn, cb) => {
               should(conn).be.eql(connection);
               executed = true;
 
               if (request.errorMe) {
-                return Promise.reject(response);
+                return cb(response);
               }
 
-              return Promise.resolve(response);
+              cb(null, response);
             },
             removeConnection: () => {
               disconnected = true;
