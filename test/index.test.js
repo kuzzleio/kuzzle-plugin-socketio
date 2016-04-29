@@ -263,7 +263,7 @@ describe('plugin implementation', function () {
               executed = true;
 
               if (request.errorMe) {
-                return cb(response);
+                return cb('errorMe', response);
               }
 
               cb(null, response);
