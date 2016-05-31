@@ -304,7 +304,7 @@ describe('plugin implementation', function () {
           should(connected).be.true();
           should(executed).be.true();
           should(disconnected).be.false();
-          should(messageSent).be.eql(serializedResponse);
+          should(messageSent).be.eql(response);
           should(destination).be.eql(fakeRequestId);
           done();
         }, 40);
@@ -323,7 +323,7 @@ describe('plugin implementation', function () {
           should(connected).be.true();
           should(executed).be.true();
           should(disconnected).be.false();
-          should(messageSent).be.eql(serializedResponse);
+          should(messageSent).be.eql(response);
           should(destination).be.eql(fakeRequestId);
           done();
         }, 20);
