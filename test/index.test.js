@@ -242,11 +242,19 @@ describe('plugin implementation', function () {
         }
       },
       context = {
-        RequestObject: function (foo) {
-          foo.requestId = fakeRequestId;
-          return foo;
-        },
-        getRouter: () => {
+        constructors: {
+          RequestObject: function (foo) {
+            foo.requestId = fakeRequestId;
+            return foo;
+          }
+        }
+      };
+
+    beforeEach(function () {
+      context.accessors = {};
+      Object.defineProperty(context.accessors, 'router', {
+        enumerable: true,
+        get: function () {
           return {
             newConnection: (protocol, id) => {
               if (!id) {
@@ -273,9 +281,7 @@ describe('plugin implementation', function () {
             }
           };
         }
-      };
-
-    beforeEach(function () {
+      });
       plugin.init({port: 1234, room: 'foo'}, context, false);
       connected = executed = disconnected = false;
     });
