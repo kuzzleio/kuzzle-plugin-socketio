@@ -2,6 +2,12 @@
 
 ![logo](https://raw.githubusercontent.com/kuzzleio/kuzzle/master/docs/images/logo.png)
 
+# Kuzzle compatibility
+
+Versions 2.x of this plugin are compatible with Kuzzle v1.0.0-RC.4 and upper.
+
+For older versions of Kuzzle, install v1.x versions of this plugin instead.
+
 # Protocol plugin: socket.io
 
 Protocol plugin adding Socket.io support to Kuzzle.
