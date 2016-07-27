@@ -8,7 +8,9 @@
     "url": "git+https://github.com/kuzzleio/kuzzle-plugin-socketio.git"
   },
   "scripts": {
-    "test": "istanbul cover _mocha"
+    "lint": "eslint lib/*.js test/*.js",
+    "unit-tests": "istanbul cover _mocha",
+    "test": "npm run-script lint && npm run-script unit-tests"
   },
   "keywords": [
     "kuzzle",
