@@ -4,7 +4,9 @@
 
 # Kuzzle compatibility
 
-Versions 2.x of this plugin are compatible with Kuzzle v1.0.0-RC.4 and upper.
+This plugin requires Kuzzle 1.0.0-RC5 or higher.
+
+For Kuzzle 1.0.0-RC4, you'll need a version 2.0.0 of this plugin.
 
 For older versions of Kuzzle, install v1.x versions of this plugin instead.
 
@@ -27,11 +29,9 @@ You can override the configuration in your `config/customPlugins.json` file in K
 
 # How to create a plugin
 
-See [Kuzzle documentation](https://github.com/kuzzleio/kuzzle/blob/master/docs/plugins.md) about plugin for more information about how to create your own plugin.
+See [Kuzzle plugins documentation](http://kuzzle.io/guide/#plugins) for more information about how to create your own plugin.
 
 # About Kuzzle
 
-For UI and linked objects developers, [Kuzzle](https://github.com/kuzzleio/kuzzle) is an open-source solution that handles all the data management
+For UI and linked objects developers, [Kuzzle](https://kuzzle.io) is an open-source solution that handles all the data management
 (CRUD, real-time storage, search, high-level features, etc).
-
-[Kuzzle](https://github.com/kuzzleio/kuzzle) features are accessible through a secured API. It can be used through a large choice of protocols such as REST, Websocket or Message Queuing protocols.
