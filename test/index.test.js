@@ -3,7 +3,6 @@ var
   EventEmitter = require('events'),
   proxyquire = require('proxyquire');
 
-
 describe('plugin implementation', function () {
   var
     Plugin,
@@ -59,11 +58,6 @@ describe('plugin implementation', function () {
   describe('#general', function () {
     it('should expose an init function', function () {
       should(plugin.init).be.a.Function();
-    });
-
-    it('should expose a hooks object', function () {
-      var hooks = require('../lib/config/hooks');
-      should(plugin.hooks).match(hooks);
     });
   });
 
@@ -154,7 +148,7 @@ describe('plugin implementation', function () {
     });
 
     it('should broadcast a message correctly', function () {
-      plugin.broadcast({channel,payload});
+      plugin.broadcast({channels: [channel],payload});
       should(messageSent).be.eql(payload);
       should(destination).be.eql(channel);
     });
@@ -176,7 +170,7 @@ describe('plugin implementation', function () {
     });
 
     it('should notify a client correctly', function () {
-      plugin.notify({id: fakeId, channel, payload});
+      plugin.notify({id: fakeId, channels: [channel], payload});
       should(notification).not.be.null();
       should(notification.payload).be.eql(payload);
       should(notification.event).be.eql(channel);
