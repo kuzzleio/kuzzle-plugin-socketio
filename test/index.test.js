@@ -1,4 +1,6 @@
 var
+  sinon = require('sinon'),
+  sandbox = sinon.sandbox.create(),
   should = require('should'),
   EventEmitter = require('events'),
   proxyquire = require('proxyquire');
@@ -53,6 +55,10 @@ describe('plugin implementation', function () {
     linkedChannel = null;
     notification = null;
     plugin = new Plugin();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('#general', function () {
@@ -365,5 +371,28 @@ describe('plugin implementation', function () {
         }, 20);
       }, 20);
     });
+
+    describe('#disconnect', () => {
+      it('should call the proxy router::removeConnection method', () => {
+        plugin.context = {
+          accessors: {
+            router: {
+              removeConnection: sinon.spy()
+            }
+          }
+        };
+
+        plugin.disconnect('id');
+
+        should(plugin.context.accessors.router.removeConnection)
+          .be.calledOnce()
+          .be.calledWithMatch({
+            id: 'id',
+            type: 'socketio'
+          });
+
+      });
+    });
+
   });
 });
