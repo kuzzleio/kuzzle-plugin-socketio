@@ -373,24 +373,15 @@ describe('plugin implementation', function () {
     });
 
     describe('#disconnect', () => {
-      it('should call the proxy router::removeConnection method', () => {
-        plugin.context = {
-          accessors: {
-            router: {
-              removeConnection: sinon.spy()
-            }
-          }
+      it('should disconnect the client socket', () => {
+        plugin.connectionPool.id = {
+          disconnect: sinon.spy()
         };
 
         plugin.disconnect('id');
 
-        should(plugin.context.accessors.router.removeConnection)
-          .be.calledOnce()
-          .be.calledWithMatch({
-            id: 'id',
-            type: 'socketio'
-          });
-
+        should(plugin.connectionPool.id.disconnect)
+          .be.calledOnce();
       });
     });
 
