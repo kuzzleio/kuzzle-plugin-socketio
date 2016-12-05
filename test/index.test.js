@@ -258,11 +258,7 @@ describe('plugin implementation', function () {
             execute: (request, cb) => {
               executed = true;
 
-              if (request.errorMe) {
-                return cb('errorMe', response);
-              }
-
-              cb(null, response);
+              cb(response);
             },
             removeConnection: () => {
               disconnected = true;
@@ -302,25 +298,6 @@ describe('plugin implementation', function () {
           should(destination).be.eql(fakeRequestId);
           done();
         }, 40);
-      }, 20);
-    });
-
-    it('should forward an error to clients if Kuzzle throws one', function (done) {
-      var payload = {errorMe: true};
-      this.timeout(100);
-      plugin.newConnection(emitter);
-
-      setTimeout(() => {
-        emitter.emit(plugin.config.room, payload);
-
-        setTimeout(() => {
-          should(connected).be.true();
-          should(executed).be.true();
-          should(disconnected).be.false();
-          should(messageSent).be.eql(response);
-          should(destination).be.eql(fakeRequestId);
-          done();
-        }, 20);
       }, 20);
     });
 
