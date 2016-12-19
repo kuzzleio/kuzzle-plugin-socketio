@@ -229,17 +229,23 @@ describe('plugin implementation', function () {
       connected,
       executed,
       disconnected,
-      response = {},
+      response,
       context = {
         constructors: {
           Request: function (foo) {
+            if (foo === 'throwme') {
+              throw new Error('errored');
+            }
+
             foo.id = fakeRequestId;
             return foo;
           }
-        }
+        },
+        errors: {BadRequestError: function (err) { this.error = err; }}
       };
 
     beforeEach(function () {
+      response = {content: {foo: 'bar'}};
       context.accessors = {};
       Object.defineProperty(context.accessors, 'router', {
         enumerable: true,
@@ -294,8 +300,27 @@ describe('plugin implementation', function () {
           should(connected).be.true();
           should(executed).be.true();
           should(disconnected).be.false();
-          should(messageSent).be.eql(response);
+          should(messageSent).be.eql(response.content);
           should(destination).be.eql(fakeRequestId);
+          done();
+        }, 40);
+      }, 20);
+    });
+
+    it('should reject ill-formed client requests', done => {
+      this.timeout(100);
+
+      plugin.newConnection(emitter);
+
+      setTimeout(() => {
+        emitter.emit(plugin.config.room, 'throwme');
+
+        setTimeout(() => {
+          should(connected).be.true();
+          should(executed).be.false();
+          should(disconnected).be.false();
+          should(messageSent).eql(JSON.stringify({error: 'errored'}));
+          should(destination).be.eql(fakeId);
           done();
         }, 40);
       }, 20);
