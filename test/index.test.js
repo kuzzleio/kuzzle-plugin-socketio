@@ -176,7 +176,7 @@ describe('plugin implementation', function () {
     });
 
     it('should notify a client correctly', function () {
-      plugin.notify({id: fakeId, channels: [channel], payload});
+      plugin.notify({connectionId: fakeId, channels: [channel], payload});
       should(notification).not.be.null();
       should(notification.payload).be.eql(payload);
       should(notification.event).be.eql(channel);
@@ -190,17 +190,17 @@ describe('plugin implementation', function () {
 
     it('should do nothing if in dummy mode', function () {
       plugin.isDummy = true;
-      plugin.joinChannel({id: fakeId, channel: 'foo'});
+      plugin.joinChannel({connectionId: fakeId, channel: 'foo'});
       should(linkedChannel).be.null();
     });
 
     it('should link an id with a channel', function () {
-      plugin.joinChannel({id: fakeId, channel: 'foo'});
+      plugin.joinChannel({connectionId: fakeId, channel: 'foo'});
       should(linkedChannel).be.eql('foo');
     });
 
     it('should do nothing if the id is unknown', function () {
-      plugin.joinChannel({id: 'some other id', channel: 'foo'});
+      plugin.joinChannel({connectionId: 'some other id', channel: 'foo'});
       should(linkedChannel).be.null();
     });
   });
@@ -212,17 +212,17 @@ describe('plugin implementation', function () {
 
     it('should do nothing if in dummy mode', function () {
       plugin.isDummy = true;
-      plugin.leaveChannel({id: fakeId, channel: 'foo'});
+      plugin.leaveChannel({connectionId: fakeId, channel: 'foo'});
       should(linkedChannel).be.null();
     });
 
     it('should link an id with a channel', function () {
-      plugin.leaveChannel({id: fakeId, channel: 'foo'});
+      plugin.leaveChannel({connectionId: fakeId, channel: 'foo'});
       should(linkedChannel).be.eql('foo');
     });
 
     it('should do nothing if the id is unknown', function () {
-      plugin.leaveChannel({id: 'some other id', channel: 'foo'});
+      plugin.leaveChannel({connectionId: 'some other id', channel: 'foo'});
       should(linkedChannel).be.null();
     });
   });
@@ -232,25 +232,26 @@ describe('plugin implementation', function () {
     var
       connection = {foo: 'bar'},
       fakeRequestId = 'fakeRequestId',
-      serializedResponse = {bar: 'foo'},
       connected,
       executed,
       disconnected,
-      response = {
-        toJson: () => {
-          return serializedResponse;
-        }
-      },
+      response,
       context = {
         constructors: {
-          RequestObject: function (foo) {
-            foo.requestId = fakeRequestId;
+          Request: function (foo) {
+            if (foo === 'throwme') {
+              throw new Error('errored');
+            }
+
+            foo.id = fakeRequestId;
             return foo;
           }
-        }
+        },
+        errors: {BadRequestError: function (err) { this.error = err; }}
       };
 
     beforeEach(function () {
+      response = {content: {foo: 'bar'}};
       context.accessors = {};
       Object.defineProperty(context.accessors, 'router', {
         enumerable: true,
@@ -266,15 +267,10 @@ describe('plugin implementation', function () {
               connected = true;
               return Promise.resolve(connection);
             },
-            execute: (request, conn, cb) => {
-              should(conn).be.eql(connection);
+            execute: (request, cb) => {
               executed = true;
 
-              if (request.errorMe) {
-                return cb('errorMe', response);
-              }
-
-              cb(null, response);
+              cb(response);
             },
             removeConnection: () => {
               disconnected = true;
@@ -310,29 +306,29 @@ describe('plugin implementation', function () {
           should(connected).be.true();
           should(executed).be.true();
           should(disconnected).be.false();
-          should(messageSent).be.eql(response);
+          should(messageSent).be.eql(response.content);
           should(destination).be.eql(fakeRequestId);
           done();
         }, 40);
       }, 20);
     });
 
-    it('should forward an error to clients if Kuzzle throws one', function (done) {
-      var payload = {errorMe: true};
+    it('should reject ill-formed client requests', done => {
       this.timeout(100);
+
       plugin.newConnection(emitter);
 
       setTimeout(() => {
-        emitter.emit(plugin.config.room, payload);
+        emitter.emit(plugin.config.room, 'throwme');
 
         setTimeout(() => {
           should(connected).be.true();
-          should(executed).be.true();
+          should(executed).be.false();
           should(disconnected).be.false();
-          should(messageSent).be.eql(response);
-          should(destination).be.eql(fakeRequestId);
+          should(messageSent).eql(JSON.stringify({error: 'errored'}));
+          should(destination).be.eql(fakeId);
           done();
-        }, 20);
+        }, 40);
       }, 20);
     });
 

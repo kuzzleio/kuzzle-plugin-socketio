@@ -2,7 +2,9 @@
 
 # Kuzzle compatibility
 
-This plugin requires Kuzzle 1.0.0-RC5 or higher.
+This plugin requires Kuzzle 1.0.0-RC8 or higher.
+
+Kuzzle 1.0.0-RC5 to 1.0.0-RC7 need the version 2.0.1 of this plugin.
 
 For Kuzzle 1.0.0-RC4, you'll need a version 2.0.0 of this plugin.
 
