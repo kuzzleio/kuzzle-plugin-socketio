@@ -1,4 +1,6 @@
 var
+  sinon = require('sinon'),
+  sandbox = sinon.sandbox.create(),
   should = require('should'),
   EventEmitter = require('events'),
   proxyquire = require('proxyquire');
@@ -53,6 +55,10 @@ describe('plugin implementation', function () {
     linkedChannel = null;
     notification = null;
     plugin = new Plugin();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('#general', function () {
@@ -361,5 +367,19 @@ describe('plugin implementation', function () {
         }, 20);
       }, 20);
     });
+
+    describe('#disconnect', () => {
+      it('should disconnect the client socket', () => {
+        plugin.connectionPool.id = {
+          disconnect: sinon.spy()
+        };
+
+        plugin.disconnect('id');
+
+        should(plugin.connectionPool.id.disconnect)
+          .be.calledOnce();
+      });
+    });
+
   });
 });
