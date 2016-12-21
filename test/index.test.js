@@ -235,7 +235,9 @@ describe('plugin implementation', function () {
           }
         },
         constructors: {
-          ClientConnection: sinon.spy(),
+          ClientConnection: sinon.spy(function () {
+            this.id = 'clientConnectionId';   // eslint-disable-line no-invalid-this
+          }),
           Request: sinon.spy()
         },
         errors: {BadRequestError: function (err) { this.error = err; }},
@@ -336,10 +338,7 @@ describe('plugin implementation', function () {
 
       should(context.accessors.router.removeConnection)
         .be.calledOnce()
-        .be.calledWith({
-          connectionId: clientSocket.id,
-          protocol: 'socketio'
-        });
+        .be.calledWith('clientConnectionId');
 
     });
 
@@ -351,10 +350,7 @@ describe('plugin implementation', function () {
       error();
       should(context.accessors.router.removeConnection)
         .be.calledOnce()
-        .be.calledWith({
-          connectionId: clientSocket.id,
-          protocol: 'socketio'
-        });
+        .be.calledWith('clientConnectionId');
     });
 
     it('should log an error if it could not register the new connection', () => {
