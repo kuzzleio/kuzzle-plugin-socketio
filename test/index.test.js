@@ -15,9 +15,7 @@ describe('plugin implementation', function () {
     emitter,
     setPort,
     fakeId = 'Verbal Kint',
-    destination,
     linkedChannel,
-    messageSent,
     notification;
 
   before(function () {
@@ -48,8 +46,6 @@ describe('plugin implementation', function () {
 
   beforeEach(function () {
     setPort = -1;
-    destination = null;
-    messageSent = null;
     linkedChannel = null;
     notification = null;
     plugin = new Plugin();
@@ -64,7 +60,7 @@ describe('plugin implementation', function () {
         }
       },
       on: sinon.spy()
-    }
+    };
   });
 
   afterEach(() => {
@@ -227,13 +223,9 @@ describe('plugin implementation', function () {
   describe('#newConnection', function () {
     // some heavy stubbing here...
     let
-      connection = {foo: 'bar'},
-      context,
-      fakeRequestId = 'fakeRequestId',
-      response;
+      context;
 
     beforeEach(function () {
-      response = {content: {foo: 'bar'}};
       context = {
         accessors: {
           router: {
@@ -257,7 +249,7 @@ describe('plugin implementation', function () {
     it('should initialize a new connection', function () {
       plugin.newConnection(clientSocket);
 
-      should(plugin.connectionPool['id'])
+      should(plugin.connectionPool.id)
         .be.exactly(clientSocket);
 
       should(context.constructors.ClientConnection)
@@ -282,9 +274,9 @@ describe('plugin implementation', function () {
       const payload = {fake: 'data'};
 
       context.constructors.Request = sinon.spy(function (data, options) {
-        this.id = 'requestId';
-        this.data = data;
-        this.options = options;
+        this.id = 'requestId';    // eslint-disable-line no-invalid-this
+        this.data = data;         // eslint-disable-line no-invalid-this
+        this.options = options;   // eslint-disable-line no-invalid-this
       });
 
       plugin.newConnection(clientSocket);
