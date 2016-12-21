@@ -1,4 +1,6 @@
-var
+'use strict';
+
+const
   sinon = require('sinon'),
   sandbox = sinon.sandbox.create(),
   should = require('should'),
@@ -6,7 +8,8 @@ var
   proxyquire = require('proxyquire');
 
 describe('plugin implementation', function () {
-  var
+  let
+    clientSocket,
     Plugin,
     plugin,
     emitter,
@@ -27,14 +30,9 @@ describe('plugin implementation', function () {
 
         emitter.id = fakeId;
         emitter.set = () => {};
-        emitter.to = () => {
-          return {
-            emit: (channel, payload) => {
-              messageSent = payload;
-              destination = channel;
-            }
-          };
-        };
+        emitter.to = sinon.stub().returns({
+          emit: sinon.spy()
+        });
 
         emitter.sockets = { connected: {} };
         emitter.sockets.connected[fakeId] = {
@@ -55,6 +53,18 @@ describe('plugin implementation', function () {
     linkedChannel = null;
     notification = null;
     plugin = new Plugin();
+
+    clientSocket = {
+      id: 'id',
+      handshake: {
+        address: 'ip',
+        headers: {
+          'x-forwarded-for': '1.1.1.1,2.2.2.2',
+          'X-Foo': 'bar'
+        }
+      },
+      on: sinon.spy()
+    }
   });
 
   afterEach(() => {
@@ -68,9 +78,13 @@ describe('plugin implementation', function () {
   });
 
   describe('#init', function () {
-    var
+    const
       config = {port: 1234},
-      context = {foo: 'bar'};
+      context = {
+        log: {
+          error: sinon.spy()
+        }
+      };
 
     it('should throw an error if no "config" argument has been provided', function (done) {
       try {
@@ -82,29 +96,25 @@ describe('plugin implementation', function () {
       }
     });
 
-    it('should fallback to dummy-mode if no port configuration has been provided', function () {
-      var ret = plugin.init({}, {}, false);
-
-      should(ret).be.false();
-      should(plugin.isDummy).be.true();
+    it('should throw if no port configuration has been provided', function () {
+      return should(() => plugin.init({}, {}))
+        .throw('[plugin-socketio]: "port" attribute is required');
     });
 
     it('should set internal properties correctly', function () {
       var
-        ret = plugin.init(config, context, true);
+        ret = plugin.init(config, context);
 
       should(ret).be.eql(plugin);
-      should(plugin.isDummy).be.true();
       should(plugin.config).be.eql(config);
       should(plugin.context).be.eql(context);
-      should(setPort).be.eql(-1);
+      should(setPort).be.eql(1234);
     });
 
     it('should start a socket.io broker if not in dummy mode', function () {
-      var ret = plugin.init(config, context, false);
+      var ret = plugin.init(config, context);
 
       should(ret).be.eql(plugin);
-      should(plugin.isDummy).be.false();
       should(plugin.config).be.eql(config);
       should(plugin.context).be.eql(context);
       should(setPort).be.eql(1234);
@@ -113,8 +123,6 @@ describe('plugin implementation', function () {
     it('should manage new connections on a "connection" event', function (done) {
       var
         stubSocket = { thisIsNot: 'aSocket' };
-
-      this.timeout(50);
 
       plugin.newConnection = socket => {
         should(socket).be.eql(stubSocket);
@@ -125,13 +133,15 @@ describe('plugin implementation', function () {
       emitter.emit('connection', stubSocket);
     });
 
-    it('should fallback to dummy-mode if the broker is unable to start', function (done) {
-      this.timeout(50);
+    it('should log an error if the broker is unable to start', function (done) {
+      const error = new Error('test');
 
-      plugin.init(config, context, false);
-      emitter.emit('error', 'fake error');
+      plugin.init(config, context);
+      emitter.emit('error', error);
       process.nextTick(() => {
-        should(plugin.isDummy).be.true();
+        should(context.log.error)
+          .be.calledOnce()
+          .be.calledWith('Unable to connect:  \n' + error.stack);
         done();
       });
     });
@@ -146,17 +156,16 @@ describe('plugin implementation', function () {
       plugin.init({port: 1234}, {}, false);
     });
 
-    it('should do nothing if in dummy mode', function () {
-      plugin.isDummy = true;
-      plugin.broadcast({channel,payload});
-      should(messageSent).be.null();
-      should(destination).be.null();
-    });
-
     it('should broadcast a message correctly', function () {
       plugin.broadcast({channels: [channel],payload});
-      should(messageSent).be.eql(payload);
-      should(destination).be.eql(channel);
+
+      should(plugin.io.to)
+        .be.calledOnce()
+        .be.calledWith(channel);
+
+      should(plugin.io.to.firstCall.returnValue.emit)
+        .be.calledOnce()
+        .be.calledWith(channel, payload);
     });
   });
 
@@ -188,12 +197,6 @@ describe('plugin implementation', function () {
       plugin.init({port: 1234}, {}, false);
     });
 
-    it('should do nothing if in dummy mode', function () {
-      plugin.isDummy = true;
-      plugin.joinChannel({connectionId: fakeId, channel: 'foo'});
-      should(linkedChannel).be.null();
-    });
-
     it('should link an id with a channel', function () {
       plugin.joinChannel({connectionId: fakeId, channel: 'foo'});
       should(linkedChannel).be.eql('foo');
@@ -210,12 +213,6 @@ describe('plugin implementation', function () {
       plugin.init({port: 1234}, {}, false);
     });
 
-    it('should do nothing if in dummy mode', function () {
-      plugin.isDummy = true;
-      plugin.leaveChannel({connectionId: fakeId, channel: 'foo'});
-      should(linkedChannel).be.null();
-    });
-
     it('should link an id with a channel', function () {
       plugin.leaveChannel({connectionId: fakeId, channel: 'foo'});
       should(linkedChannel).be.eql('foo');
@@ -229,157 +226,168 @@ describe('plugin implementation', function () {
 
   describe('#newConnection', function () {
     // some heavy stubbing here...
-    var
+    let
       connection = {foo: 'bar'},
+      context,
       fakeRequestId = 'fakeRequestId',
-      connected,
-      executed,
-      disconnected,
-      response,
-      context = {
-        constructors: {
-          Request: function (foo) {
-            if (foo === 'throwme') {
-              throw new Error('errored');
-            }
-
-            foo.id = fakeRequestId;
-            return foo;
-          }
-        },
-        errors: {BadRequestError: function (err) { this.error = err; }}
-      };
+      response;
 
     beforeEach(function () {
       response = {content: {foo: 'bar'}};
-      context.accessors = {};
-      Object.defineProperty(context.accessors, 'router', {
-        enumerable: true,
-        get: function () {
-          return {
-            newConnection: (protocol, id) => {
-              if (!id) {
-                return Promise.rejected(new Error('rejected'));
-              }
-
-              should(protocol).be.eql(plugin.protocol);
-              should(id).be.eql(emitter.id);
-              connected = true;
-              return Promise.resolve(connection);
-            },
-            execute: (request, cb) => {
-              executed = true;
-
-              cb(response);
-            },
-            removeConnection: () => {
-              disconnected = true;
-            }
-          };
+      context = {
+        accessors: {
+          router: {
+            execute: sinon.spy(),
+            newConnection: sinon.spy(),
+            removeConnection: sinon.spy()
+          }
+        },
+        constructors: {
+          ClientConnection: sinon.spy(),
+          Request: sinon.spy()
+        },
+        errors: {BadRequestError: function (err) { this.error = err; }},
+        log: {
+          error: sinon.spy()
         }
-      });
-      plugin.init({port: 1234, room: 'foo'}, context, false);
-      connected = executed = disconnected = false;
-    });
-
-    it('should do nothing if in dummy mode', function () {
-      plugin.isDummy = true;
-
-      should(plugin.newConnection(emitter)).be.false();
-      should(connected).be.false();
+      };
+      plugin.init({port: 1234, room: 'foo'}, context);
     });
 
     it('should initialize a new connection', function () {
-      plugin.newConnection(emitter);
-      should(connected).be.true();
+      plugin.newConnection(clientSocket);
+
+      should(plugin.connectionPool['id'])
+        .be.exactly(clientSocket);
+
+      should(context.constructors.ClientConnection)
+        .be.calledOnce()
+        .be.calledWith('socketio', ['1.1.1.1', '2.2.2.2', 'ip'], {
+          'X-Foo': 'bar',
+          'x-forwarded-for': '1.1.1.1,2.2.2.2'
+        });
+
+      should(context.accessors.router.newConnection)
+        .be.calledOnce();
+
+      should(clientSocket.on)
+        .be.calledThrice()
+        .be.calledWith('foo')
+        .be.calledWith('disconnect')
+        .be.calledWith('error');
+
     });
 
-    it('should listen to incoming requests and forward them to Kuzzle', function (done) {
-      var payload = {fake: 'data'};
-      this.timeout(100);
-      plugin.newConnection(emitter);
+    it('should listen to incoming requests and forward them to Kuzzle', function () {
+      const payload = {fake: 'data'};
 
-      setTimeout(() => {
-        emitter.emit(plugin.config.room, payload);
-
-        setTimeout(() => {
-          should(connected).be.true();
-          should(executed).be.true();
-          should(disconnected).be.false();
-          should(messageSent).be.eql(response.content);
-          should(destination).be.eql(fakeRequestId);
-          done();
-        }, 40);
-      }, 20);
-    });
-
-    it('should reject ill-formed client requests', done => {
-      this.timeout(100);
-
-      plugin.newConnection(emitter);
-
-      setTimeout(() => {
-        emitter.emit(plugin.config.room, 'throwme');
-
-        setTimeout(() => {
-          should(connected).be.true();
-          should(executed).be.false();
-          should(disconnected).be.false();
-          should(messageSent).eql(JSON.stringify({error: 'errored'}));
-          should(destination).be.eql(fakeId);
-          done();
-        }, 40);
-      }, 20);
-    });
-
-    it('should handle client disconnections', function (done) {
-      this.timeout(100);
-      plugin.newConnection(emitter);
-
-      setTimeout(() => {
-        emitter.emit('disconnect', {});
-
-        setTimeout(() => {
-          should(connected).be.true();
-          should(executed).be.false();
-          should(disconnected).be.true();
-          should(messageSent).be.null();
-          should(destination).be.null();
-          done();
-        }, 20);
-      }, 20);
-    });
-
-    it('should handle client socket errors', function (done) {
-      this.timeout(100);
-      plugin.newConnection(emitter);
-
-      setTimeout(() => {
-        emitter.emit('error', {});
-
-        setTimeout(() => {
-          should(connected).be.true();
-          should(executed).be.false();
-          should(disconnected).be.true();
-          should(messageSent).be.null();
-          should(destination).be.null();
-          done();
-        }, 20);
-      }, 20);
-    });
-
-    describe('#disconnect', () => {
-      it('should disconnect the client socket', () => {
-        plugin.connectionPool.id = {
-          disconnect: sinon.spy()
-        };
-
-        plugin.disconnect('id');
-
-        should(plugin.connectionPool.id.disconnect)
-          .be.calledOnce();
+      context.constructors.Request = sinon.spy(function (data, options) {
+        this.id = 'requestId';
+        this.data = data;
+        this.options = options;
       });
+
+      plugin.newConnection(clientSocket);
+
+      const emit = clientSocket.on.firstCall.args[1];
+      emit(payload);
+
+      should(context.constructors.Request)
+        .be.calledOnce()
+        .be.calledWith(payload);
+
+      should(context.accessors.router.execute)
+        .be.calledOnce()
+        .be.calledWithMatch({
+          id: 'requestId',
+          data: payload
+        });
+
+      const
+        executeCb = context.accessors.router.execute.firstCall.args[1],
+        response = {content: 'blah'};
+
+      executeCb(response);
+      should(plugin.io.to)
+        .be.calledOnce()
+        .be.calledWith(clientSocket.id);
+      should(plugin.io.to.firstCall.returnValue.emit)
+        .be.calledOnce()
+        .be.calledWith('requestId', response.content);
+    });
+
+    it('should reject ill-formed client requests', () => {
+      const error = new Error('test');
+      context.constructors.Request = function () { throw error; };
+
+      plugin.newConnection(clientSocket);
+
+      const emit = clientSocket.on.firstCall.args[1];
+
+      emit('throwme');
+
+      should(plugin.io.to)
+        .be.calledOnce()
+        .be.calledWith(clientSocket.id);
+
+      should(plugin.io.to.firstCall.returnValue.emit)
+        .be.calledOnce()
+        .be.calledWith(clientSocket.id, '{"error":"test"}');
+    });
+
+    it('should handle client disconnections', function () {
+      plugin.newConnection(clientSocket);
+
+      const disconnect = clientSocket.on.secondCall.args[1];
+
+      disconnect();
+
+      should(context.accessors.router.removeConnection)
+        .be.calledOnce()
+        .be.calledWith({
+          connectionId: clientSocket.id,
+          protocol: 'socketio'
+        });
+
+    });
+
+    it('should handle client socket errors', () => {
+      plugin.newConnection(clientSocket);
+
+      const error = clientSocket.on.thirdCall.args[1];
+
+      error();
+      should(context.accessors.router.removeConnection)
+        .be.calledOnce()
+        .be.calledWith({
+          connectionId: clientSocket.id,
+          protocol: 'socketio'
+        });
+    });
+
+    it('should log an error if it could not register the new connection', () => {
+      const error = new Error('test');
+      context.accessors.router.newConnection = sinon.stub().throws(error);
+
+      plugin.newConnection(clientSocket);
+      should(context.log.error)
+        .be.calledOnce()
+        .be.calledWith('Unable to declare new connection: \n%j', error.stack);
     });
 
   });
+
+  describe('#disconnect', () => {
+    it('should disconnect the client socket', () => {
+      plugin.connectionPool.id = {
+        disconnect: sinon.spy()
+      };
+
+      plugin.disconnect('id');
+
+      should(plugin.connectionPool.id.disconnect)
+        .be.calledOnce();
+    });
+  });
+
 });
