@@ -13,18 +13,13 @@ describe('plugin implementation', function () {
     Plugin,
     plugin,
     emitter,
-    setPort,
-    fakeId = 'Verbal Kint',
-    linkedChannel,
-    notification;
+    fakeId = 'Verbal Kint';
 
   before(function () {
     // stubbing socket.io
     Plugin = proxyquire('../lib/index', {
-      'socket.io': portNumber => {
+      'socket.io': () => {
         emitter = new EventEmitter();
-
-        setPort = portNumber;
 
         emitter.id = fakeId;
         emitter.set = () => {};
@@ -34,9 +29,9 @@ describe('plugin implementation', function () {
 
         emitter.sockets = { connected: {} };
         emitter.sockets.connected[fakeId] = {
-          join: channel => { linkedChannel = channel; },
-          leave: channel => { linkedChannel = channel; },
-          emit: (event, payload) => { notification = {event, payload}; }
+          join: sinon.spy(),
+          leave: sinon.spy(),
+          emit: sinon.spy()
         };
 
         return emitter;
@@ -45,9 +40,6 @@ describe('plugin implementation', function () {
   });
 
   beforeEach(function () {
-    setPort = -1;
-    linkedChannel = null;
-    notification = null;
     plugin = new Plugin();
 
     clientSocket = {
@@ -59,6 +51,9 @@ describe('plugin implementation', function () {
           'X-Foo': 'bar'
         }
       },
+      emit: sinon.spy(),
+      join: sinon.spy(),
+      leave: sinon.spy(),
       on: sinon.spy()
     };
   });
@@ -98,22 +93,19 @@ describe('plugin implementation', function () {
     });
 
     it('should set internal properties correctly', function () {
-      var
-        ret = plugin.init(config, context);
+      const ret = plugin.init(config, context);
 
       should(ret).be.eql(plugin);
       should(plugin.config).be.eql(config);
       should(plugin.context).be.eql(context);
-      should(setPort).be.eql(1234);
     });
 
     it('should start a socket.io broker if not in dummy mode', function () {
-      var ret = plugin.init(config, context);
+      const ret = plugin.init(config, context);
 
       should(ret).be.eql(plugin);
       should(plugin.config).be.eql(config);
       should(plugin.context).be.eql(context);
-      should(setPort).be.eql(1234);
     });
 
     it('should manage new connections on a "connection" event', function (done) {
@@ -166,25 +158,25 @@ describe('plugin implementation', function () {
   });
 
   describe('#notify', function () {
-    var
-      channel = 'foobar',
+    const
       payload = {foo: 'bar'};
 
     beforeEach(function () {
       plugin.init({port: 1234}, {}, false);
     });
 
-    it('should do nothing if in dummy mode', function () {
-      plugin.isDummy = true;
-      plugin.notify({id: fakeId,channel,payload});
-      should(notification).be.null();
-    });
-
     it('should notify a client correctly', function () {
-      plugin.notify({connectionId: fakeId, channels: [channel], payload});
-      should(notification).not.be.null();
-      should(notification.payload).be.eql(payload);
-      should(notification.event).be.eql(channel);
+      plugin.sockets.fakeId = clientSocket;
+
+      plugin.notify({
+        connectionId: 'fakeId',
+        channels: ['foobar'],
+        payload
+      });
+
+      should(clientSocket.emit)
+        .be.calledOnce()
+        .be.calledWith('foobar', payload);
     });
   });
 
@@ -194,13 +186,18 @@ describe('plugin implementation', function () {
     });
 
     it('should link an id with a channel', function () {
+      plugin.sockets[fakeId] = clientSocket;
+
       plugin.joinChannel({connectionId: fakeId, channel: 'foo'});
-      should(linkedChannel).be.eql('foo');
+      should(clientSocket.join)
+        .be.calledOnce()
+        .be.calledWith('foo');
     });
 
     it('should do nothing if the id is unknown', function () {
       plugin.joinChannel({connectionId: 'some other id', channel: 'foo'});
-      should(linkedChannel).be.null();
+      should(clientSocket.join)
+        .have.callCount(0);
     });
   });
 
@@ -210,13 +207,19 @@ describe('plugin implementation', function () {
     });
 
     it('should link an id with a channel', function () {
+      plugin.sockets[fakeId] = clientSocket;
       plugin.leaveChannel({connectionId: fakeId, channel: 'foo'});
-      should(linkedChannel).be.eql('foo');
+
+      should(clientSocket.leave)
+        .be.calledOnce()
+        .be.calledWith('foo');
     });
 
     it('should do nothing if the id is unknown', function () {
       plugin.leaveChannel({connectionId: 'some other id', channel: 'foo'});
-      should(linkedChannel).be.null();
+
+      should(clientSocket.leave)
+        .have.callCount(0);
     });
   });
 
@@ -251,7 +254,9 @@ describe('plugin implementation', function () {
     it('should initialize a new connection', function () {
       plugin.newConnection(clientSocket);
 
-      should(plugin.connectionPool.id)
+      should(plugin.socketId2ConnectionId[clientSocket.id])
+        .be.exactly('clientConnectionId');
+      should(plugin.sockets.clientConnectionId)
         .be.exactly(clientSocket);
 
       should(context.constructors.ClientConnection)
@@ -367,13 +372,13 @@ describe('plugin implementation', function () {
 
   describe('#disconnect', () => {
     it('should disconnect the client socket', () => {
-      plugin.connectionPool.id = {
+      plugin.sockets.id = {
         disconnect: sinon.spy()
       };
 
       plugin.disconnect('id');
 
-      should(plugin.connectionPool.id.disconnect)
+      should(plugin.sockets.id.disconnect)
         .be.calledOnce();
     });
   });
