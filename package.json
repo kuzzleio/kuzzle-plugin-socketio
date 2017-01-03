@@ -25,13 +25,6 @@
   "bugs": {
     "url": "https://github.com/kuzzleio/kuzzle-plugin-socketio/issues"
   },
-  "pluginInfo": {
-    "defaultConfig": {
-      "port": 7512,
-      "room": "kuzzle",
-      "loadedBy": "server"
-    }
-  },
   "license": "Apache-2.0",
   "dependencies": {
     "socket.io": "^1.4.5"

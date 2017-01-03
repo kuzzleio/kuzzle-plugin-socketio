@@ -77,35 +77,20 @@ describe('plugin implementation', function () {
         }
       };
 
-    it('should throw an error if no "config" argument has been provided', function (done) {
-      try {
-        plugin.init(undefined, {}, true);
-        done(new Error('Expected a throw, but nothing happened'));
-      }
-      catch (e) {
-        done();
-      }
-    });
-
-    it('should throw if no port configuration has been provided', function () {
-      return should(() => plugin.init({}, {}))
-        .throw('[plugin-socketio]: "port" attribute is required');
-    });
-
     it('should set internal properties correctly', function () {
       const ret = plugin.init(config, context);
 
       should(ret).be.eql(plugin);
-      should(plugin.config).be.eql(config);
+      should(plugin.config.room).be.eql('kuzzle');
+      should(plugin.config.port).be.eql(config.port);
       should(plugin.context).be.eql(context);
     });
 
-    it('should start a socket.io broker if not in dummy mode', function () {
-      const ret = plugin.init(config, context);
+    it('should start a socket.io broker', function () {
+      plugin.init(config, context);
 
-      should(ret).be.eql(plugin);
-      should(plugin.config).be.eql(config);
-      should(plugin.context).be.eql(context);
+      should(plugin.io)
+        .be.an.instanceOf(EventEmitter);
     });
 
     it('should manage new connections on a "connection" event', function (done) {
