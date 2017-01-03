@@ -239,7 +239,7 @@ describe('plugin implementation', function () {
     it('should initialize a new connection', function () {
       plugin.newConnection(clientSocket);
 
-      should(plugin.socketId2ConnectionId[clientSocket.id])
+      should(plugin.socketIdToConnectionId[clientSocket.id])
         .be.exactly('clientConnectionId');
       should(plugin.sockets.clientConnectionId)
         .be.exactly(clientSocket);
