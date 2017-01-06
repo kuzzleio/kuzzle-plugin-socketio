@@ -1,6 +1,6 @@
 {
   "name": "kuzzle-plugin-socketio",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Protocol plugin adding Socket.io support to Kuzzle",
   "main": "./lib/index.js",
   "repository": {
@@ -24,13 +24,6 @@
   },
   "bugs": {
     "url": "https://github.com/kuzzleio/kuzzle-plugin-socketio/issues"
-  },
-  "pluginInfo": {
-    "defaultConfig": {
-      "port": 7512,
-      "room": "kuzzle",
-      "loadedBy": "server"
-    }
   },
   "license": "Apache-2.0",
   "dependencies": {
