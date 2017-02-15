@@ -1,8 +1,13 @@
 [![Build Status](https://travis-ci.org/kuzzleio/kuzzle-plugin-socketio.svg?branch=master)](https://travis-ci.org/kuzzleio/kuzzle-plugin-socketio) [![codecov.io](http://codecov.io/github/kuzzleio/kuzzle-plugin-socketio/coverage.svg?branch=master)](http://codecov.io/github/kuzzleio/kuzzle?branch=master) [![Dependency Status](https://david-dm.org/kuzzleio/kuzzle-plugin-socketio.svg)](https://david-dm.org/kuzzleio/kuzzle-plugin-socketio)
 
+# /!\ Plugin Deprecated /!\
+
+Since Kuzzle 1.0.0-RC9, Websocket protocol is embedded within Kuzzle's core.
+This plugin is now deprecated
+
 # Kuzzle compatibility
 
-This plugin requires Kuzzle 1.0.0-RC8 or higher.
+This plugin requires Kuzzle 1.0.0-RC8.
 
 Kuzzle 1.0.0-RC5 to 1.0.0-RC7 need the version 2.0.1 of this plugin.
 
