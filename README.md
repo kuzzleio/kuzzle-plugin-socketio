@@ -2,7 +2,7 @@
 
 # /!\ Plugin Deprecated /!\
 
-Since Kuzzle 1.0.0-RC9, Websocket protocol is embed within Kuzzle's core.
+Since Kuzzle 1.0.0-RC9, Websocket protocol is embedded within Kuzzle's core.
 This plugin is now deprecated
 
 # Kuzzle compatibility
